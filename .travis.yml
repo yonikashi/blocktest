@@ -47,10 +47,10 @@ before_script:
 
 script: 
    - pipenv sync
-   - pipenv run invoke build-core --rc0.01
+   - pipenv run invoke build-core --latest
    - docker login --username=yonikashi -p Jony@2611
    - docker tag images_stellar-core yonikashi/blocktest
-   - docker push yonikashi/blocktest
+   - docker push yonikashi/blocktest:RC2.15
  
 
 cache:
