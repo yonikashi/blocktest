@@ -32,6 +32,7 @@ addons:
     - pandoc
     - libffi-dev
     - build-essential
+    - glide
 
 before_install:
    -  
@@ -42,6 +43,7 @@ before_script:
    - pip -V
    - pip install --user invoke
    - pip install --user pipenv
+   - curl https://glide.sh | sh
 
 script: 
    - pipenv sync
