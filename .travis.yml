@@ -40,7 +40,6 @@ install:
    -  
 before_script:
    - pip -V
-   - pip install pipenv
    - pip install invoke
 
 script: 
