@@ -103,7 +103,7 @@ def init_git_repo(c, git_url, dir_name, branch='kinecosystem/master'):
 
 
 @task
-def build_core(c, version, branch='kinecosystem/master', production=True):
+def build_core(c, version, branch='kinecosystem/master', production=False):
     """Build Core binary docker image.
 
     By default, builds a Docker image tagged ready for production.

@@ -45,6 +45,8 @@ before_script:
 
 script: 
    - pipenv sync
+   - pipenv run invoke build-core --latest
+   - pipenv run invoke build-go  --latest
    - pipenv run invoke start-core
    - pipenv run invoke start-horizon
    - pipenv run invoke start-friendbot
