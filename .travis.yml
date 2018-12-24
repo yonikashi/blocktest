@@ -38,7 +38,7 @@ before_install:
    -  
 
 install:
-   -  
+   - docker ps  
 before_script:
    - pip -V
    - pip install --user invoke
@@ -46,8 +46,9 @@ before_script:
 
 script: 
    - pipenv sync
-   - pipenv run invoke start-core
-   - docker ps
+   - pipenv run invoke build-core --latest
+   - docker images
+ 
 
 cache:
   directories:
