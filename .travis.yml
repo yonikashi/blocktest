@@ -46,6 +46,7 @@ before_script:
 script: 
    - pipenv sync
    - pipenv shell invoke --list
+   - pipenv run invoke build-core --latest 
 
 cache:
   directories:
