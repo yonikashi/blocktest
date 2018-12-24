@@ -40,7 +40,7 @@ install:
    -  
 before_script:
    - pip -V
-   - pip install invoke
+   - pip install --user invoke
 
 script: 
    - pipenv sync
