@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+
+  stellar-core-telegraf:
+    environment:
+     - NODE_NAME="{{stellar_core.network.name}}" #note that this only works if a single core is deployed
+    image: kinecosystem/stellar-core-telegraf:v1.0.16
+    environment:
+      NODE_NAME: "{{stellar_core.network.name}}"
+    container_name: stellar_core_telegraf
+    links:
+     - "stellar-core:stellar-core"
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+  stellar-core:
+    image: kinecosystem/stellar-core:kinecosystem-v1.0.0-stellar-v9.2.0
+    container_name: stellar_core
+    ports:
+      - 11625:11625
+      - 11626:11626
+    volumes:
+      - ./volumes/stellar-core:/opt/stellar-core
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"

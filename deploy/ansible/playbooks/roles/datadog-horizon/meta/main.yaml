@@ -1,0 +1,84 @@
+---
+dependencies:
+  - role: Datadog.datadog
+    datadog_api_key: "{{datadog.api_key}}"
+    datadog_agent_version: '1:6.3.0-1'
+
+    datadog_config:
+      tags:
+        - app:horizon
+        - env:prod
+        - stellar-network:{{horizon.network.name}}
+      collect_ec2_tags: true
+      use_dogstatsd: no
+      logs_enabled: true
+
+    datadog_checks:
+
+      ntp:
+        init_config:
+        instances:
+          - offset_threshold: 60
+            host: 169.254.169.123  # amazon ntp
+
+      docker:
+        logs:
+          - type: docker
+            image: kinecosystem/horizon
+            service: horizon
+            source: go
+
+          - type: docker
+            image: kinecosystem/horizon-nginx-proxy
+            service: horizon-nginx-proxy
+            source: nginx
+
+      nginx:
+        init_config:
+        instances:
+          - nginx_status_url: http://localhost:80/nginx_status/
+
+      http_check:
+        instances:
+          - name: horizon-health-check
+            url: http://localhost:8001/status
+            timeout: 5
+
+            http_response_status_code: 200
+
+      json_check:
+        init_config:
+          default_timeout: 5
+
+        instances:
+          - url: http://localhost:80/metrics
+            metrics:
+              # Metrics that include "count" report the 5 minute moving avg per second of this metric
+
+              - horizon.goroutines: {path: goroutines.value, type: gauge}                                    # goroutines used by the horizon app
+
+              - horizon.elder_ledger: {path: '"history.elder_ledger".value', type: gauge}                    # oldest ledger in the horizon db
+              - horizon.latest_ledger: {path: '"history.latest_ledger".value', type: gauge}                  # newest ledger in the horizon db
+
+              - horizon.open_connections: {path: '"history.open_connections".value', type: gauge}            # open connections to the horizon database
+              - horizon.core_open_connections: {path: '"stellar_core.open_connections".value', type: gauge}  # open connections to the stellar core database
+
+              - horizon.requests_failed: {path: '"requests.failed"."count"', type: count}                    # failed requests to horizon (400<= status code < 600)
+              - horizon.requests_succeeded: {path: '"requests.succeeded"."count"', type: count}              # successful requests to horizon (200<= status code < 400)
+              - horizon.requests_total: {path: '"requests.total"."count"', type: count}                      # total requests to this horizon
+
+              - horizon.txsub_buffered: {path: '"txsub.buffered".value', type: gauge}                        # submission buffered in the submission queue
+              - horizon.txsub_open: {path: '"txsub.open".value', type: gauge}                                # transactions that have yet to be confirmed as successful or failed
+              - horizon.txsub_succeeded: {path: '"txsub.succeeded"."count"', type: count}                    # successfull transactions sent from this horizon
+              - horizon.txsub_failed: {path: '"txsub.failed"."count"', type: count}                          # failed transactions sent from this proccess
+              - horizon.txsub_total: {path: '"txsub.total"."count"', type: count}                            # total number of transactions sent to this horizon
+
+              - horizon.requests_failed_1m_rate: {path: '"requests.failed"."1m.rate"', type: rate}
+              - horizon.requests_succeeded_1m_rate: {path: '"requests.succeeded"."1m.rate"', type: rate}
+              - horizon.requests_total_1m_rate: {path: '"requests.total"."1m.rate"', type: rate}
+
+              - horizon.txsub_failed_1m_rate: {path: '"txsub.failed"."1m.rate"', type: rate}
+              - horizon.txsub_succeeded_1m_rate: {path: '"txsub.succeeded"."1m.rate"', type: rate}
+              - horizon.txsub_total_1m_rate: {path: '"txsub.total"."1m.rate"', type: rate}
+
+  - role: datadog-json-check

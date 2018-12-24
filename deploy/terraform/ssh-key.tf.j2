@@ -1,0 +1,15 @@
+{# create one ssh key per region #}
+{%for region in stellar.nodes|map(attribute="region")|unique%}
+# ssh key to create for accessing ec2 instances
+resource "aws_key_pair" "{{region}}" {
+  provider = "aws.{{region}}"
+
+  key_name   = "stellar-{{stellar.network_name}}"
+  public_key = "${file("{{stellar.ssh.public_key}}")}"
+}
+{%endfor%}
+
+
+{#
+# vi: ft=terraform.jinja2
+#}

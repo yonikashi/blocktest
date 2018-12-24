@@ -1,0 +1,160 @@
+version: "3"
+
+services:
+
+  stellar-core-telegraf:
+    environment:
+     - NODE_NAME="stellar-core"
+    image: kinecosystem/stellar-core-telegraf:latest
+    links:
+     - stellar-core
+    restart: on-failure
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+  stellar-core:
+    build:
+      dockerfile: dockerfiles/Dockerfile.stellar-core
+      context: .
+    ports:
+      - 11626:11626
+    links:
+      - stellar-core-db
+    volumes:
+      - ./volumes/stellar-core/opt/stellar-core:/opt/stellar-core
+      - ./volumes/stellar-core/tmp/stellar-core:/tmp/stellar-core
+    restart: on-failure
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+  stellar-core-db:
+    image: postgres:10-alpine
+    environment:
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: "12345678"
+      POSTGRES_DB: core
+
+  horizon:
+    build:
+      dockerfile: dockerfiles/Dockerfile.horizon
+      context: .
+    ports:
+      - 8000:8000
+    links:
+      - horizon-db
+      - stellar-core
+      - stellar-core-db
+    volumes:
+      - ./volumes/horizon/opt/horizon:/opt/horizon
+    environment:
+      # available configuration visible at:
+      # https://github.com/stellar/horizon/blob/v0.11.1/src/github.com/stellar/horizon/cmd/horizon/main.go#L33
+      #
+      NETWORK_PASSPHRASE: private testnet
+      DATABASE_URL: postgres://stellar:12345678@horizon-db/horizon?sslmode=disable
+      HORIZON_DB_MAX_OPEN_CONNECTIONS: "24"
+      STELLAR_CORE_DATABASE_URL: postgres://stellar:12345678@stellar-core-db/core?sslmode=disable
+      STELLAR_CORE_URL: http://stellar-core:11626
+
+      LOG_LEVEL: info
+      INGEST: "true"
+      PER_HOUR_RATE_LIMIT: "999999"
+      # https://www.stellar.org/developers/horizon/reference/admin.html#managing-storage-for-historical-data
+      HISTORY_RETENTION_COUNT: "200000"
+
+      # versions < 0.12.2
+      # FRIENDBOT_SECRET: "${ROOT_ACCOUNT_SEED}"
+
+      # versions >= 0.12.2
+      FRIENDBOT_URL: http://friendbot:8000
+
+    restart: on-failure
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+  horizon-db:
+    image: postgres:10-alpine
+    environment:
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: "12345678"
+      POSTGRES_DB: horizon
+
+  stellar-core-build:
+    build:
+      dockerfile: dockerfiles/Dockerfile.stellar-core-build
+      context: .
+    volumes:
+      - ./volumes/stellar-core-git:/stellar-core
+
+  horizon-build:
+    build:
+      dockerfile: dockerfiles/Dockerfile.horizon-build
+      context: .
+    volumes:
+      - ./volumes/go-git:/go/src/github.com/kinecosystem/go
+
+  horizon-nginx-proxy:
+    image: kinecosystem/horizon-nginx-proxy:latest
+    ports:
+      - 8008:80
+    links:
+      - horizon
+    environment:
+      STATSD_SAMPLE_RATE_PERCENT: 100
+      STATSD_METRIC_PREFIX: 'my-horizon'
+      PROXY_LISTEN_PORT: 80
+      PROXY_READ_TIMEOUT: 10
+      PROXY_PASS_URL: http://horizon:8000
+      # Set host for Horizon's response links, leave as $$host for the links to show the original request host
+      HOST: $$host
+
+  # friendbot was originally part of horizon
+  # but extracted to its own microservice since horizon v0.12.2
+  friendbot:
+    build:
+      dockerfile: dockerfiles/Dockerfile.friendbot
+      context: .
+    ports:
+      - 8001:8000
+    links:
+      - horizon
+    volumes:
+      - ./volumes/friendbot/opt/friendbot:/opt/friendbot
+    environment:
+      FRIENDBOT_SEED: '${ROOT_ACCOUNT_SEED}'
+      PORT: '8000'
+      NETWORK_PASSPHRASE: private testnet
+      HORIZON_ADDRESS: http://horizon:8000
+      STARTING_BALANCE: '10.00'
+    restart: on-failure
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        max-file: "3"
+
+  laboratory:
+    image: kinecosystem/laboratory:4ae9ca9
+    ports:
+      - 8002:8080
+    environment:
+      # The laboratory runs on client side, your browser cannot access "friendbot:8001" etc,
+      # so we need to use localhost
+      HORIZON_ENDPOINT_TESTNET: http://localhost:8000
+      NETWORK_PASSPHRASE_TESTNET: private testnet
+      FRIENDBOT_ENDPOINT: http://localhost:8001
+
+  stellar-archivist:
+    image: kinecosystem/stellar-archivist
+    volumes:
+      - ./volumes/stellar-archivist/opt/stellar-archivist:/opt/stellar-archivist
+

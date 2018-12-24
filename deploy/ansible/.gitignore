@@ -1,0 +1,10 @@
+/inventory
+/ansible-playbook.log
+/playbooks/*.retry
+/playbooks/galaxy
+
+/playbooks/group_vars
+/playbooks/inventory
+
+*.pem
+*.pem.pub

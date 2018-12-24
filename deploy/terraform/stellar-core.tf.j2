@@ -1,0 +1,73 @@
+{%for node in stellar.nodes%}
+
+{%set module_name_suffix = '{}_{}'.format(stellar.network_name, node.zone)%}
+{%set stellar_core_module = 'stellar_core_{}'.format(module_name_suffix)%}
+
+{%if node.horizon%}
+{%set horizon_module = 'horizon_{}'.format(module_name_suffix)%}
+{%endif%}
+
+module "{{stellar_core_module}}" {
+  source = "modules/stellar-core"
+  providers = {
+    "aws" = "aws.{{node.region}}"
+  }
+
+  name = "${local.{{stellar_core_module}}_name}"
+
+  instance_key_pair_name = "${aws_key_pair.{{node.region}}.key_name}"
+  ssh_private_key = "{{stellar.ssh.private_key}}"
+
+  stellar_network_name = "{{stellar.network_name}}"
+  tld                  = "{{stellar.tld}}"
+  zone                 = "{{node.zone}}"
+  instance_type        = "{{node.instance_type}}"
+
+  rds_password         = "{{node.rds.password}}"
+  rds_instance_class   = "{{node.rds.instance_class}}"
+
+  {%if node.horizon%}
+  # walk around "value of 'count' cannot be computed" bug
+  # https://github.com/hashicorp/terraform/issues/12570
+  horizon_security_group_id = "${module.{{horizon_module}}.ec2_security_group_id[0]}"
+  horizon_security_group_id_count = "1"
+  {%else%}
+  horizon_security_group_id = ""
+  horizon_security_group_id_count = "0"
+  {%endif%}
+}
+
+output "ec2_{{stellar_core_module}}" {
+  description = "EC2 public DNS name"
+  value       = "${module.{{stellar_core_module}}.ec2}"
+}
+
+output "s3_bucket_{{stellar_core_module}}" {
+  description = "S3 bucket name"
+  value       = "${module.{{stellar_core_module}}.s3}"
+}
+
+output "rds_{{stellar_core_module}}" {
+  description = "RDS address"
+  value       = "${module.{{stellar_core_module}}.rds}"
+}
+
+locals {
+  # used to name ec2 and rds instances, security groups, etc.
+  {{stellar_core_module}}_name = "stellar-core-{{stellar.network_name}}-${random_id.{{stellar_core_module}}_name_suffix.hex}"
+}
+
+resource "random_id" "{{stellar_core_module}}_name_suffix" {
+  byte_length = 2
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+{%endfor%}
+
+
+{#
+# vi: ft=terraform.jinja2
+#}

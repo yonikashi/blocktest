@@ -1,0 +1,61 @@
+---
+dependencies:
+  - role: Datadog.datadog
+    datadog_api_key: "{{datadog.api_key}}"
+    datadog_agent_version: '1:6.3.0-1'
+
+    datadog_config:
+      tags:
+        - app:stellar-core
+        - env:prod
+        - stellar-network:{{stellar_core.network.name}}
+      collect_ec2_tags: true
+      use_dogstatsd: no
+      logs_enabled: true
+
+    datadog_checks:
+
+      ntp:
+        init_config:
+
+        instances:
+          - offset_threshold: 60
+            host: 169.254.169.123  # amazon ntp
+
+      http_check:
+        instances:
+          # stellar-core quorum group health check
+          - name: stellar-core
+            url: http://localhost:11626/info
+            timeout: 1
+
+            content_match: 'Synced!'
+            reverse_content_match: '(Booting|Joining SCP|Connected|Catching up|Stopping)'
+            http_response_status_code: 200
+
+      docker:
+        logs:
+          - type: docker
+            name: stellar_core
+            service: stellar-core
+
+      json_check:
+        init_config:
+          default_timeout: 5
+
+        instances:
+          # select this node's variables from group_vars according to it's hostname
+          - url: '{{(stellar_core.nodes|selectattr("name", "equalto", inventory_hostname)|first).archive.get_address}}.well-known/stellar-history.json'
+            metrics:
+              # latest ledger updated in the history archive
+              - archive.latest_ledger: {path: currentLedger, type: gauge}
+
+          - url: http://localhost:11626/metrics
+            metrics:
+              - core.ledger_age_closed: {path: 'metrics."ledger.age.closed"."count"', type: count}
+              - core.ledger_ledger_close: {path: 'metrics."ledger.ledger.close"."count"', type: count}
+              - core.ledger_transaction_apply: {path: 'metrics."ledger.transaction.apply"."count"', type: count}  # time to apply a transaction to ledger
+              - core.scp_sync_lost: {path: 'metrics."scp.sync.lost"."count"', type: count}                        # count of scp sync losts
+
+
+  - role: datadog-json-check

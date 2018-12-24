@@ -1,0 +1,13 @@
+.terraform/
+/terraform
+.terraform.*
+
+*.pem
+*.pem.pub
+
+*.tfstate
+*.tfstate.backup
+
+/*.tf
+/vars.yml
+/vars/

@@ -1,0 +1,62 @@
+daemon off;  # run in foreground because docker
+pid /run/nginx.pid;
+worker_processes auto;
+load_module modules/ngx_http_statsd_module.so;
+events {
+  worker_connections 50000;
+}
+
+http {
+  statsd_server localhost;
+  statsd_sample_rate ${STATSD_SAMPLE_RATE_PERCENT};
+  # https://t37.net/nginx-optimization-understanding-sendfile-tcp_nodelay-and-tcp_nopush.html
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  types_hash_max_size 2048;
+  server_tokens off;
+
+  default_type application/octet-stream;
+
+  access_log /dev/stdout;
+  error_log /dev/stderr;
+
+  server {
+    listen ${PROXY_LISTEN_PORT};
+
+    proxy_read_timeout ${PROXY_READ_TIMEOUT};
+
+    location / {
+      statsd_count "request_count.$request_method.${NODE_NAME}" 1;
+      statsd_count "request_count.$status.${NODE_NAME}" 1;
+      # http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
+      proxy_http_version 1.1;
+      proxy_set_header Connection "";
+      proxy_set_header Host   ${HOST};
+      proxy_pass ${PROXY_PASS_URL};
+      statsd_timing "response_time.$request_method.${NODE_NAME}" "$upstream_response_time";
+
+      # if the request is for sse, return 200 instead of 504
+      #
+      # we identify sse by looking for "text/event-stream" header
+      if ($http_accept = "text/event-stream"){
+        error_page 504 = @sse_response;
+      }
+    }
+
+    location @sse_response {
+      return 200;
+    }
+
+    # metrics
+    location /nginx_status {
+      allow 127.0.0.1;
+      deny all;
+      stub_status;
+    }
+  }
+}
+
+
+# vi: ft=nginx
