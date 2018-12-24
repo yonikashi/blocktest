@@ -1,5 +1,5 @@
 language: cpp
-dist: xenial
+dist: trusty
 sudo: false
 
 compiler:
@@ -32,6 +32,7 @@ addons:
     - pandoc
     - libffi-dev
     - build-essential
+    - docker-ce
 
 before_install:
    -  
@@ -42,14 +43,11 @@ before_script:
    - pip -V
    - pip install --user invoke
    - pip install --user pipenv
-   - curl https://glide.sh | sh
 
 script: 
    - pipenv sync
    - pipenv run invoke start-core
-   - pipenv run invoke start-horizon
-   - pipenv run invoke start-friendbot
-   - pipenv run invoke network
+   - docker ps
 
 cache:
   directories:
