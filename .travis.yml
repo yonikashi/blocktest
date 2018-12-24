@@ -40,11 +40,12 @@ install:
    -  
 before_script:
    - pip -V
-   - sh pip install pipenv
+   - pip install pipenv
+   - pip install invoke
 
 script: 
-   - sh pipenv sync
-   - sh pipenv shell invoke --list
+   - pipenv sync
+   - pipenv shell invoke --list
 
 cache:
   directories:
