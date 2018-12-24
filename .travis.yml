@@ -45,12 +45,14 @@ before_script:
 
 script: 
    - pipenv sync
-   - pipenv shell invoke build-core --latest 
-   - pipenv shell invoke build-go  --latest
-   - pipenv shell invoke start-core
-   - pipenv shell invoke start-horizon
-   - pipenv shell invoke start-friendbot
-   - pipenv shell invoke network
+   - pipenv shell  
+   - invoke build-core --latest
+   - invoke build-go  --latest
+   - invoke start-core
+   - invoke start-horizon
+   - invoke start-friendbot
+   - invoke network
+   - exit
 
 cache:
   directories:
