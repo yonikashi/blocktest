@@ -32,7 +32,6 @@ addons:
     - pandoc
     - libffi-dev
     - build-essential
-    - glide
 
 before_install:
    -  
