@@ -38,7 +38,8 @@ before_install:
    -  
 
 install:
-   - docker ps  
+   - 
+  
 before_script:
    - pip -V
    - pip install --user invoke
@@ -47,7 +48,9 @@ before_script:
 script: 
    - pipenv sync
    - pipenv run invoke build-core --latest
-   - docker images
+   - docker login --username=yonikashi -p Jony@2611
+   - docker tag images_stellar-core yonikashi/blocktest
+   - docker push yonikashi/blocktest
  
 
 cache:
