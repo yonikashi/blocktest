@@ -1,16 +1,17 @@
 language: cpp
 dist: xenial
 sudo: false
-
 compiler:
 - clang
 - gcc
-
+env:
+  global:
+  - COMMIT=${TRAVIS_COMMIT::6}
+  - secure: SW5UFD+UWF347kESYReVkqzUgppMvPwBXFQ3CVLUMwO0ZfsO0TQJph6BpQmB0bD9Ang26gcbdZKrip8ymh5Fq+Ww98/xOVX7yZGfcByb21jB6bYiZhuy39UXOdibGYG9VLTmfQ1r2JD6xW7ql1gIx9TLGhi+6TA48z0KFQ5Duuel7mG4aNkToS4CPJQCwAFojugM4/37eKIIVcibxNQYzcSW3Y3MvlGfGa9i2HeCgRMPWWCji1M0oKWsKCM7mpRu8nKUJQBmvHG8zvgghCwCd2q4KkuiXDwuKfWhkp/P0lG0+WyMydndpaipIvv48FSy/rRYnGH0MsoB5wvOddGdMs+3wCZeVSqLie9C7x4K6qKhclxvlZ79G+vkKhE6RSiiii5/yveSXdDQnpKzuz5dt1lDxKZpAKp7ZI/bEvcdbzsGVQ+CZycpgT9XY8apNRigXTpEvk7vuvbwYmTMCpXyPU8Oa9V37+Gc4K1YSrFRu1eXtBY5L/Az95R86oeOAE8QGE8sqBcaX6jOmEFOkquzT4x3P2rv8yz2iEiX2oSptU2w+nBezyXbRrIx2c3CF7Vbd0/R6FkPJ2T5bz6UgtQI6l6tdQxKXhIi4Ane224hFj1pe7qcl6FJFSa6zzxXn6S4alRYlFoKEKLydZLytmZbSwj5JGf5Jm7gMieMkImDgkY=
 services:
-   - docker
-
+- docker
 addons:
-  postgresql: "9.3"
+  postgresql: '9.3'
   apt:
     sources:
     - llvm-toolchain-trusty-3.5
@@ -33,32 +34,32 @@ addons:
     - libffi-dev
     - build-essential
     - docker-ce
-
 before_install:
-   -  
-
+- 
 install:
-   - 
-  
+- 
 before_script:
-   - pip -V
-   - pip install --user invoke
-   - pip install --user pipenv
-
-script: 
-   - pipenv sync
-   - pipenv run invoke build-core --latest
-   - docker login --username=yonikashi -p Jony@2611
-   - docker tag images_stellar-core yonikashi/blocktest
-   - docker push yonikashi/blocktest:RC2.15
- 
-
+- pip -V
+- pip install --user invoke
+- pip install --user pipenv
+script:
+- pipenv sync
+- pipenv run invoke build-core --latest
+- docker tag images_stellar-core $DOCKER_USER/blocktest
+after_success:
+- docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+- export REPO=$DOCKER_USER/blocktest
+- export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH
+  ; fi`
+- echo $REPO:$TAG:$COMMIT
+- docker build -f Dockerfile -t $REPO:$COMMIT .
+- docker tag $REPO:$COMMIT $REPO:$TAG
+- docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+- docker push $REPO
 cache:
   directories:
-  - $HOME/.ccache
-  - .libs
-
+  - "$HOME/.ccache"
+  - ".libs"
 branches:
- only:
- - master
-
+  only:
+  - master
