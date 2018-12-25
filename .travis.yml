@@ -16,8 +16,6 @@ addons:
   postgresql: '9.3'
   apt:
     sources:
-    - llvm-toolchain-trusty-3.5
-    - llvm-toolchain-trusty-5.0
     - ubuntu-toolchain-r-test
     packages:
     - autoconf
@@ -47,10 +45,10 @@ before_script:
 script:
 - pipenv sync
 - pipenv run invoke build-core --latest
-- docker tag images_stellar-core $DOCKER_USER/blocktest
+- docker tag images_stellar-core yonikashi/blocktest
 after_success:
-- docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-- export REPO=$DOCKER_USER/blocktest
+- docker login --username=$DOCKER_USER -p $DOCKER_PASS
+- export REPO=yonikashi/blocktest
 - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH
   ; fi`
 - echo $REPO:$TAG:$COMMIT
