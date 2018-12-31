@@ -146,7 +146,7 @@ def build_core(c, version, branch='kinecosystem/master', production=False):
 
 
 @task
-def build_go(c, version, branch='kinecosystem/master', app='horizon', production=True):
+def build_go(c, version, branch='kinecosystem/master', app='horizon', production=False):
     """Build Horizon binary docker images and other misc. Golang apps.
 
     By default, builds a Docker image tagged ready for production.
