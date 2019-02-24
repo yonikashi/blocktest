@@ -35,7 +35,9 @@ addons:
     - build-essential
     - docker-ce
 before_install:
-- 
+- sudo mkdir $COMMIT && cd $COMMIT
+- sudo git clone https://github.com/yonikashi/blocktest.git && cd blocktest
+-   
 install:
 - 
 before_script:
@@ -62,5 +64,4 @@ cache:
   - ".libs"
 branches:
   only:
-  - master
   - testbranch
