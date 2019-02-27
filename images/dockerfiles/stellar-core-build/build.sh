@@ -11,7 +11,8 @@ cd /stellar-core
 # make format
 
 # build
-make -j $(nproc) check && make -j $(nproc) && src/stellar-core --test --silent
+make -j $(nproc) check && make -j $(nproc) && src/stellar-core --test -o stellartests.txt &> /dev/null
 # test
 # export ALL_VERSIONS=1
 # make check
+
